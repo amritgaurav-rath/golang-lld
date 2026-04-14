@@ -58,22 +58,22 @@ func NewLevel(id int, numMotorcycleSpots, numCarSpots, numTruckSpots int) *Level
 }
 
 // ParkVehicle attempts to park a vehicle on this level. Thread-safe.
-func (l *Level) ParkVehicle(v *Vehicle) (*ParkingSpot, error) {
+func (l *Level) ParkVehicle(v Vehicle) (*ParkingSpot, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	// Quick check if there are spots available
-	if l.AvailableSpots[v.Type] <= 0 {
-		return nil, fmt.Errorf("no spots available for %s on level %d", v.Type, l.ID)
+	if l.AvailableSpots[v.GetType()] <= 0 {
+		return nil, fmt.Errorf("no spots available for %s on level %d", v.GetType(), l.ID)
 	}
 
 	for _, spot := range l.Spots {
-		if !spot.IsOccupied && spot.Type == v.Type {
+		if !spot.IsOccupied && spot.Type == v.GetType() {
 			err := spot.Park(v)
 			if err != nil {
 				return nil, err
 			}
-			l.AvailableSpots[v.Type]--
+			l.AvailableSpots[v.GetType()]--
 			return spot, nil
 		}
 	}
@@ -82,7 +82,7 @@ func (l *Level) ParkVehicle(v *Vehicle) (*ParkingSpot, error) {
 }
 
 // UnparkVehicle attempts to free a spot given the spotID. Thread-safe.
-func (l *Level) UnparkVehicle(spotID string) (*Vehicle, error) {
+func (l *Level) UnparkVehicle(spotID string) (Vehicle, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -93,7 +93,7 @@ func (l *Level) UnparkVehicle(spotID string) (*Vehicle, error) {
 			}
 			v := spot.Vehicle
 			spot.Unpark()
-			l.AvailableSpots[v.Type]++
+			l.AvailableSpots[v.GetType()]++
 			return v, nil
 		}
 	}

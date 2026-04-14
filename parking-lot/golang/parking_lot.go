@@ -2,49 +2,57 @@ package main
 
 import (
 	"fmt"
+	"sync"
 )
 
-// ParkingLot represents the overarching parking system managing multiple levels
+// ParkingLot follows the Singleton pattern handling interactions globally
 type ParkingLot struct {
 	Levels []*Level
 }
 
-// NewParkingLot creates a Parking Lot with the given initialized levels.
-func NewParkingLot(levels []*Level) *ParkingLot {
-	return &ParkingLot{
-		Levels: levels,
-	}
+var (
+	parkingLotInstance *ParkingLot
+	parkingLotOnce     sync.Once
+)
+
+// GetParkingLotInstance strictly enforces the Singleton pattern natively using sync.Once
+func GetParkingLotInstance(levels []*Level) *ParkingLot {
+	parkingLotOnce.Do(func() {
+		parkingLotInstance = &ParkingLot{
+			Levels: levels,
+		}
+	})
+	// If the user tries to overwrite after creation, it just returns the first one created
+	return parkingLotInstance
+}
+
+// ResetParkingLotInstance is a test-helper purely because tests conflict overriding the singleton state
+func ResetParkingLotInstance() {
+	parkingLotInstance = nil
+	parkingLotOnce = sync.Once{}
 }
 
 // ParkVehicle searches all levels for an available spot of the matching type and attempts to park.
-func (p *ParkingLot) ParkVehicle(v *Vehicle) (*ParkingSpot, error) {
+func (p *ParkingLot) ParkVehicle(v Vehicle) (*ParkingSpot, error) {
 	for _, level := range p.Levels {
-		// Quick check before attempting to acquire the lock to park
 		avail := level.GetAvailability()
-		if avail[v.Type] > 0 {
+		if avail[v.GetType()] > 0 {
 			spot, err := level.ParkVehicle(v)
 			if err == nil {
-				// Successfully parked
 				return spot, nil
 			}
-			// If err != nil here, it means due to a race condition, another concurrent thread
-			// might have taken the last spot between our GetAvailability() check and ParkVehicle() call.
-			// In that case, we gracefully continue to check the next levels.
 		}
 	}
-	return nil, fmt.Errorf("parking lot is full for vehicle type: %s", v.Type)
+	return nil, fmt.Errorf("parking lot is full for vehicle type: %s", v.GetType())
 }
 
 // UnparkVehicle frees up the parking spot across the lot by its ID.
-func (p *ParkingLot) UnparkVehicle(spotID string) (*Vehicle, error) {
+func (p *ParkingLot) UnparkVehicle(spotID string) (Vehicle, error) {
 	for _, level := range p.Levels {
 		v, err := level.UnparkVehicle(spotID)
 		if err == nil {
 			return v, nil
 		}
-		// If err != nil, the spot might be empty or belong to a different level.
-		// We continue searching other levels, though a better optimization could
-		// decode the level ID directly from the spotID (e.g., L1-M1) and jump to it.
 	}
 	return nil, fmt.Errorf("spot %s not found in parking lot or is already empty", spotID)
 }
