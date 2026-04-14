@@ -1,7 +1,7 @@
 # 🚗 Parking Lot System (LLD)
 
 ## 📌 Problem Statement
-Design a Parking Lot System that efficiently manages vehicle parking across multiple levels with support for different vehicle types and concurrent operations.
+Design a Parking Lot System that efficiently manages vehicle parking across multiple levels with support for different vehicle types and concurrent operations. This problem statement is solved in three different languages, i.e., C++, Java & Golang.
 
 ---
 
