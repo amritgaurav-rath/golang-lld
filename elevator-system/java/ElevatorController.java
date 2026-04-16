@@ -18,7 +18,9 @@ public class ElevatorController {
     }
 
     /**
-     * Dispatcher thread-safe method to find the closest suitable elevator sequence.
+     * Dispatcher method to find the closest suitable elevator sequence concurrently.
+     * Thanks to the synchronized methods within the Elevator class, polling for
+     * getDistanceIfAssigned() guarantees atomic, accurate state retrieval.
      */
     public synchronized void requestElevator(Request req) throws Exception {
         Elevator optimalElevator = null;

@@ -45,6 +45,8 @@ public class Elevator implements Runnable {
 
     /**
      * Synchronized evaluation to determine if this elevator is suitable for a request concurrently.
+     * By making this method synchronized, we ensure the dispatcher reads an accurate snapshot
+     * of currentLoad, currentFloor, and currentDirection without encountering race conditions.
      */
     public synchronized int getDistanceIfAssigned(Request req) {
         if (currentLoad + req.getPassengers() > capacity) {
@@ -67,7 +69,9 @@ public class Elevator implements Runnable {
     }
 
     /**
-     * Adds a request and wakes up the elevator thread if it was sleeping in IDLE.
+     * Adds a request to the elevator's internal queue in a thread-safe manner.
+     * After updating the required stops, it uses notifyAll() to wake up the elevator's run()
+     * loop if it was currently waiting (sleeping) in an IDLE state.
      */
     public synchronized void addRequest(Request req) throws Exception {
         if (currentLoad + req.getPassengers() > capacity) {
@@ -107,9 +111,15 @@ public class Elevator implements Runnable {
         notifyAll();
     }
 
+    /**
+     * The main execution loop for the Elevator thread, running asynchronously.
+     */
+    @Override
     public void run() {
         while (running) {
             synchronized (this) {
+                // If there's no work, pause the thread execution using wait() to save CPU cycles.
+                // The thread will remain asleep until addRequest() invokes notifyAll().
                 if (currentDirection == Direction.IDLE && upStops.isEmpty() && downStops.isEmpty()) {
                     try {
                         wait(500); // Wait for new requests to arrive, timeout to check 'running' flag periodically

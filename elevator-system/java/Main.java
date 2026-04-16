@@ -13,7 +13,8 @@ public class Main {
 
         System.out.println("Starting concurrent request generator...\n");
 
-        // Start a thread to act as users randomly pushing buttons
+        // Start a separate background thread to simulate multiple users pushing buttons
+        // concurrently over a period of time, proving thread-safety under load.
         Thread requestGenerator = new Thread(() -> {
             int[][] reqsData = {
                 {0, 5, 2},
