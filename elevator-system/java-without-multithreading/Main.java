@@ -6,7 +6,7 @@ import java.util.List;
  */
 public class Main {
     public static void main(String[] args) {
-        System.out.println("\uD83D\uDE80 Initializing Synchronous (Single-Threaded) Elevator System in Java...");
+        System.out.println("Initializing Synchronous (Single-Threaded) Elevator System in Java...");
 
         ElevatorController controller = new ElevatorController(3, 10);
 
