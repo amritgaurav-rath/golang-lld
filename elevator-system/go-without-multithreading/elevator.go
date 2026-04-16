@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"math"
 )
 
+// Elevator represents a single physical elevator in the system
 type Elevator struct {
 	ID               string
 	CurrentFloor     int
@@ -12,12 +12,13 @@ type Elevator struct {
 	Capacity         int
 	CurrentLoad      int
 
-	UpStops   map[int]bool
-	DownStops map[int]bool
+	UpStops   map[int]bool // Floors where the elevator needs to stop while moving UP
+	DownStops map[int]bool // Floors where the elevator needs to stop while moving DOWN
 
-	Requests []*Request
+	Requests []*Request // List of currently assigned requests
 }
 
+// NewElevator creates a new elevator initialized to the ground floor (0) and state IDLE
 func NewElevator(id string, capacity int) *Elevator {
 	return &Elevator{
 		ID:               id,
@@ -31,6 +32,7 @@ func NewElevator(id string, capacity int) *Elevator {
 	}
 }
 
+// AddRequest assigns a new passenger request to this elevator and updates its planned stops
 func (e *Elevator) AddRequest(req *Request) error {
 	if e.CurrentLoad+req.Passengers > e.Capacity {
 		return fmt.Errorf("elevator %s capacity exceeded", e.ID)
@@ -68,12 +70,17 @@ func (e *Elevator) AddRequest(req *Request) error {
 	return nil
 }
 
+// GetDistanceIfAssigned calculates a heuristic "distance" cost for this elevator to handle the given request
+// Returns int(1e9) if the elevator is currently too full
 func (e *Elevator) GetDistanceIfAssigned(req *Request) int {
 	if e.CurrentLoad+req.Passengers > e.Capacity {
-		return math.MaxInt32
+		return int(1e9)
 	}
 
-	dist := int(math.Abs(float64(e.CurrentFloor - req.SourceFloor)))
+	dist := e.CurrentFloor - req.SourceFloor
+	if dist < 0 {
+		dist = -dist
+	}
 	
 	if e.CurrentDirection == IDLE {
 		return dist
@@ -85,9 +92,11 @@ func (e *Elevator) GetDistanceIfAssigned(req *Request) int {
 		return dist
 	}
 
+	// Penalizes the elevator with a higher cost if moving in the opposite direction
 	return dist + 1000 
 }
 
+// processCurrentFloor handles stopping and dropping off passengers at the current floor
 func (e *Elevator) processCurrentFloor() {
 	if e.CurrentDirection == UP {
 		if e.UpStops[e.CurrentFloor] {
@@ -104,6 +113,7 @@ func (e *Elevator) processCurrentFloor() {
 	}
 }
 
+// dropOffPassengers removes completed requests and updates the elevator's current load
 func (e *Elevator) dropOffPassengers() {
 	var remaining []*Request
 	for _, req := range e.Requests {
@@ -117,6 +127,7 @@ func (e *Elevator) dropOffPassengers() {
 	e.Requests = remaining
 }
 
+// getNextDirection determines whether the elevator should continue in its current direction, reverse, or turn IDLE
 func (e *Elevator) getNextDirection() Direction {
 	if e.CurrentDirection == UP {
 		for floor := range e.UpStops {
@@ -148,6 +159,7 @@ func (e *Elevator) getNextDirection() Direction {
 }
 
 // Tick manually steps the exact sequence once per cycle without background threads
+// It evaluates direction, moves by one floor, and processes any stops at the new floor
 func (e *Elevator) Tick() {
 	nextDir := e.getNextDirection()
 	e.CurrentDirection = nextDir

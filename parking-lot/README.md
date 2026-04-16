@@ -1,29 +1,24 @@
-# 🚗 Parking Lot System (LLD)
+# Parking Lot System (Low Level Design)
 
-## 📌 Problem Statement
-Design a Parking Lot System that efficiently manages vehicle parking across multiple levels with support for different vehicle types and concurrent operations. This problem statement is solved in three different languages, i.e., C++, Java & Golang.
+This repository contains an implementation of a highly scalable, concurrent Parking Lot System. The system efficiently assigns parking spots across multiple levels, handling various vehicle types, dynamic availability, and thread-safe entry/exit ticketing.
 
----
+## Requirements
 
-## 🧾 Requirements
+1. **Multi-Level Layout**: The parking lot contains multiple levels, each housing a defined number of spot capacities.
+2. **Vehicle Diversity**: Supports different categories of vehicles such as `Car`, `Motorcycle`, and `Truck`.
+3. **Spot Compatibility**: Each parking spot guarantees support for specific vehicle types.
+4. **Dynamic Assignment**: The system seamlessly assigns optimal parking spots when a vehicle enters and processes releases when the vehicle exits.
+5. **Real-time Tracking**: Complete real-time awareness and polling of available spots to provide inventory checks.
+6. **Concurrency Integrity**: Emphasizes avoiding race conditions. Designed properly to accommodate multiple entry and exit panels accessed concurrently.
 
-### Functional Requirements
-- The parking lot should have multiple levels, each with a fixed number of parking spots.
-- The system should support different types of vehicles:
-  - Car
-  - Motorcycle
-  - Truck
-- Each parking spot should support a specific vehicle type.
-- The system should:
-  - Assign a parking spot on vehicle entry
-  - Release the spot on exit
-- Track availability of parking spots in real-time.
-- Provide availability information to customers.
+## Core Components
 
----
+- **Vehicle**: Represented dynamically based on type (`Car`, `Motorcycle`, `Truck`), inheriting basic vehicle properties like a License Plate.
+- **ParkingSpot**: Tracks its assigned vehicle type, geographical structural ID, and current availability occupancy status.
+- **Level**: A single floor containing multiple parking spots, providing internal indexing to find open, matching spots quickly.
+- **ParkingLot (Dispatcher)**: The singleton/central controller linking multiple levels, routing incoming cars to the closest available compatible spot.
 
-### Non-Functional Requirements
-- The system should support:
-  - Multiple entry and exit points
-  - Concurrent access (thread-safe operations)
-- Should be scalable for large parking lots.
+## Implementations
+- `cpp/`: Native thread-safe C++ implementation modeling classic OOP hierarchies.
+- `java/`: Scalable Java object-oriented build.
+- `golang/` & `go-without-multithreading/`: Golang architectural codebases specifically implemented to highlight standard synchronization vs un-synchronized deterministic simulation.
