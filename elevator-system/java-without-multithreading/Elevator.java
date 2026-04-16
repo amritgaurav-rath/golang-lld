@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Represents a single concurrent elevator, managing its state and processing requests.
+ * Represents a single elevator, managing its state and processing requests.
  */
-public class Elevator implements Runnable {
+public class Elevator {
     private final String id;
     private int currentFloor;
     private Direction currentDirection;
@@ -16,8 +16,6 @@ public class Elevator implements Runnable {
     private final Map<Integer, Boolean> upStops;
     private final Map<Integer, Boolean> downStops;
     private List<Request> requests;
-    
-    private volatile boolean running;
 
     public Elevator(String id, int capacity) {
         this.id = id;
@@ -28,48 +26,20 @@ public class Elevator implements Runnable {
         this.upStops = new HashMap<>();
         this.downStops = new HashMap<>();
         this.requests = new ArrayList<>();
-        this.running = true;
     }
 
     public String getId() {
         return id;
     }
 
-    public synchronized Direction getCurrentDirection() {
+    public Direction getCurrentDirection() {
         return currentDirection;
     }
-    
-    public void stopElevator() {
-        running = false;
-    }
 
     /**
-     * Synchronized evaluation to determine if this elevator is suitable for a request concurrently.
+     * Adds a request to this elevator if capacity allows, updating its internal stops.
      */
-    public synchronized int getDistanceIfAssigned(Request req) {
-        if (currentLoad + req.getPassengers() > capacity) {
-            return Integer.MAX_VALUE;
-        }
-
-        int dist = Math.abs(currentFloor - req.getSourceFloor());
-
-        if (currentDirection == Direction.IDLE) {
-            return dist;
-        }
-        if (currentDirection == Direction.UP && req.getSourceFloor() >= currentFloor) {
-            return dist;
-        }
-        if (currentDirection == Direction.DOWN && req.getSourceFloor() <= currentFloor) {
-            return dist;
-        }
-
-        return dist + 1000;
-    }
-
-    /**
-     * Adds a request and wakes up the elevator thread if it was sleeping in IDLE.
-     */
-    public synchronized void addRequest(Request req) throws Exception {
+    public void addRequest(Request req) throws Exception {
         if (currentLoad + req.getPassengers() > capacity) {
             throw new Exception("elevator " + id + " capacity exceeded");
         }
@@ -102,51 +72,36 @@ public class Elevator implements Runnable {
                 currentDirection = Direction.DOWN;
             }
         }
-        
-        // Notify the elevator thread that new work arrived
-        notifyAll();
     }
 
-    public void run() {
-        while (running) {
-            synchronized (this) {
-                if (currentDirection == Direction.IDLE && upStops.isEmpty() && downStops.isEmpty()) {
-                    try {
-                        wait(500); // Wait for new requests to arrive, timeout to check 'running' flag periodically
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                    continue; // Re-evaluate after wake up
-                }
-
-                Direction nextDir = getNextDirection();
-                currentDirection = nextDir;
-
-                if (currentDirection != Direction.IDLE) {
-                    if (currentDirection == Direction.UP) {
-                        currentFloor++;
-                    } else if (currentDirection == Direction.DOWN) {
-                        currentFloor--;
-                    }
-                }
-                
-                processCurrentFloor();
-            }
-
-            // Simulate the physical time it takes to move between floors outside the synchronized block
-            // to allow dispatchers to add requests while it moves.
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
+    /**
+     * Calculates the estimated distance/cost for an elevator to serve a new request.
+     * @return An integer representing distance, or Integer.MAX_VALUE if capacity is exceeded.
+     */
+    public int getDistanceIfAssigned(Request req) {
+        if (currentLoad + req.getPassengers() > capacity) {
+            return Integer.MAX_VALUE;
         }
-        System.out.printf("   [SYSTEM] Elevator %s has safely shut down.\n", id);
+
+        int dist = Math.abs(currentFloor - req.getSourceFloor());
+
+        if (currentDirection == Direction.IDLE) {
+            return dist;
+        }
+        if (currentDirection == Direction.UP && req.getSourceFloor() >= currentFloor) {
+            return dist;
+        }
+        if (currentDirection == Direction.DOWN && req.getSourceFloor() <= currentFloor) {
+            return dist;
+        }
+
+        return dist + 1000;
     }
 
-    private synchronized void processCurrentFloor() {
+    /**
+     * Processes stops at the current floor, dropping off passengers and removing fulfilled stops.
+     */
+    private void processCurrentFloor() {
         if (currentDirection == Direction.UP) {
             if (upStops.containsKey(currentFloor) && upStops.get(currentFloor)) {
                 System.out.printf("   -> Elevator %s \uD83D\uDED1 STOPPED at floor %d (UP)\n", id, currentFloor);
@@ -162,7 +117,7 @@ public class Elevator implements Runnable {
         }
     }
 
-    private synchronized void dropOffPassengers() {
+    private void dropOffPassengers() {
         List<Request> remaining = new ArrayList<>();
         for (Request req : requests) {
             if (req.getDestinationFloor() == currentFloor) {
@@ -176,7 +131,10 @@ public class Elevator implements Runnable {
         requests = remaining;
     }
 
-    private synchronized Direction getNextDirection() {
+    /**
+     * Determines the next direction for the elevator based on remaining requests.
+     */
+    private Direction getNextDirection() {
         if (currentDirection == Direction.UP) {
             for (int floor : upStops.keySet()) {
                 if (floor > currentFloor) {
@@ -204,5 +162,25 @@ public class Elevator implements Runnable {
         }
 
         return Direction.IDLE;
+    }
+
+    /**
+     * Simulates one unit of time, moving the elevator and processing stops.
+     */
+    public void tick() {
+        Direction nextDir = getNextDirection();
+        currentDirection = nextDir;
+
+        if (currentDirection == Direction.IDLE) {
+            return;
+        }
+
+        if (currentDirection == Direction.UP) {
+            currentFloor++;
+        } else if (currentDirection == Direction.DOWN) {
+            currentFloor--;
+        }
+
+        processCurrentFloor();
     }
 }

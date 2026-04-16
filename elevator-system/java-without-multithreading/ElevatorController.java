@@ -2,7 +2,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Manages a fleet of concurrent elevators, distributing requests optimally.
+ * Manages a fleet of elevators, distributing requests optimally.
  */
 public class ElevatorController {
     private final List<Elevator> elevators;
@@ -10,17 +10,14 @@ public class ElevatorController {
     public ElevatorController(int numElevators, int capacity) {
         elevators = new ArrayList<>();
         for (int i = 0; i < numElevators; i++) {
-            Elevator el = new Elevator("E" + (i + 1), capacity);
-            elevators.add(el);
-            // Spin up the background thread for this elevator immediately
-            new Thread(el, "Thread-" + el.getId()).start();
+            elevators.add(new Elevator("E" + (i + 1), capacity));
         }
     }
 
     /**
-     * Dispatcher thread-safe method to find the closest suitable elevator sequence.
+     * Finds the closest suitable elevator for a request and assigns it.
      */
-    public synchronized void requestElevator(Request req) throws Exception {
+    public void requestElevator(Request req) throws Exception {
         Elevator optimalElevator = null;
         int minDistance = Integer.MAX_VALUE;
 
@@ -41,13 +38,19 @@ public class ElevatorController {
         
         optimalElevator.addRequest(req);
     }
-    
+
     /**
-     * Initiates a graceful shutdown of all elevator threads.
+     * Advances the simulation by one step for all elevators.
+     * @return true if any elevator is currently active.
      */
-    public void shutdown() {
+    public boolean tickAll() {
+        boolean isActive = false;
         for (Elevator el : elevators) {
-            el.stopElevator();
+            el.tick();
+            if (el.getCurrentDirection() != Direction.IDLE) {
+                isActive = true;
+            }
         }
+        return isActive;
     }
 }

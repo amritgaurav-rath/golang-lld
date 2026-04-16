@@ -25,7 +25,6 @@ type Seat struct {
 }
 
 type Show struct {
-	// Mutex removed for single-threaded executing version
 	ID        string
 	Movie     *Movie
 	Theater   *Theater
