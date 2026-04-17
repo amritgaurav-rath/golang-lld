@@ -1,63 +1,62 @@
 import java.util.Arrays;
+import entities.*;
+import strategy.*;
+import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println("🚀 Starting Splitwise (Synchronous Java)");
+        System.out.println("🚀 Starting Splitwise (Perfect AshishPS1 Repository Clone)");
 
         SplitwiseService service = SplitwiseService.getInstance();
 
-        User alice = new User("U1", "Alice", "alice@example.com");
-        User bob = new User("U2", "Bob", "bob@example.com");
-        User charlie = new User("U3", "Charlie", "charlie@example.com");
+        User u1 = service.addUser("U1", "John", "john@example.com");
+        User u2 = service.addUser("U2", "Jane", "jane@example.com");
+        User u3 = service.addUser("U3", "Bob", "bob@example.com");
 
-        service.addUser(alice);
-        service.addUser(bob);
-        service.addUser(charlie);
+        List<User> participants = Arrays.asList(u1, u2, u3);
+        Group group = service.addGroup("G1", "Trip to Paris", participants);
 
-        Group group = new Group("G1", "Vacation", Arrays.asList(alice, bob, charlie));
-        service.addGroup(group);
+        // Equal Split
+        Expense.ExpenseBuilder equalBuilder = new Expense.ExpenseBuilder()
+                .setId("EXP1")
+                .setDescription("Dinner")
+                .setAmount(300.0)
+                .setPaidBy(u1)
+                .setParticipants(participants)
+                .setSplitStrategy(new EqualSplitStrategy());
+        service.createExpense(equalBuilder);
 
-        // Equal Split Expense
-        Expense expense1 = new Expense(
-            "EXP1",
-            300.0,
-            "Hotel",
-            alice,
-            Arrays.asList(new EqualSplit(alice), new EqualSplit(bob), new EqualSplit(charlie))
-        );
+        // Exact Split
+        Expense.ExpenseBuilder exactBuilder = new Expense.ExpenseBuilder()
+                .setId("EXP2")
+                .setDescription("Cab")
+                .setAmount(100.0)
+                .setPaidBy(u2)
+                .setParticipants(participants)
+                .setSplitValues(Arrays.asList(20.0, 30.0, 50.0)) // Sums to 100
+                .setSplitStrategy(new ExactSplitStrategy());
+        service.createExpense(exactBuilder);
 
-        try {
-            service.addExpense(group.getId(), expense1);
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
+        // Percentage Split
+        Expense.ExpenseBuilder percentBuilder = new Expense.ExpenseBuilder()
+                .setId("EXP3")
+                .setDescription("Hotel")
+                .setAmount(200.0)
+                .setPaidBy(u3)
+                .setParticipants(participants)
+                .setSplitValues(Arrays.asList(10.0, 40.0, 50.0)) // Sums to 100%
+                .setSplitStrategy(new PercentageSplitStrategy());
+        service.createExpense(percentBuilder);
+
+        System.out.println("\n--- Current Balances ---");
+        service.showBalanceSheet(u1.getId());
+        service.showBalanceSheet(u2.getId());
+        service.showBalanceSheet(u3.getId());
+
+        System.out.println("\n--- Simplifying Group Debts ---");
+        List<Transaction> transactions = service.simplifyGroupDebts(group.getId());
+        for (Transaction tx : transactions) {
+            System.out.printf("Simplify Settlement Route: %s should precisely pay %s $%.2f\n", tx.getFrom().getName(), tx.getTo().getName(), tx.getAmount());
         }
-
-        // Percent Split Expense
-        Expense expense2 = new Expense(
-            "EXP2",
-            100.0,
-            "Dinner",
-            bob,
-            Arrays.asList(new PercentSplit(alice, 20), new PercentSplit(bob, 50), new PercentSplit(charlie, 30))
-        );
-
-        try {
-            service.addExpense(group.getId(), expense2);
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
-        }
-
-        service.printBalances();
-
-        // Settle Bob and Charlie
-        System.out.println("Attempting to settle Charlie and Bob...");
-        try {
-            Transaction transaction = service.settleBalance(charlie.getId(), bob.getId());
-            System.out.printf("✅ Settled! %s paid %s $%.2f\n", transaction.getSender().getName(), transaction.getReceiver().getName(), transaction.getAmount());
-        } catch (Exception e) {
-            System.out.println("Error settling: " + e.getMessage());
-        }
-
-        service.printBalances();
     }
 }

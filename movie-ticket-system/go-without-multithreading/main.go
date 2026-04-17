@@ -1,95 +1,86 @@
 package main
 
 import (
+	"app/movie-ticket-system/go-without-multithreading/entities"
+	"app/movie-ticket-system/go-without-multithreading/enums"
+	"app/movie-ticket-system/go-without-multithreading/services"
+    "app/movie-ticket-system/go-without-multithreading/observer"
+    "app/movie-ticket-system/go-without-multithreading/strategy"
 	"fmt"
 	"time"
 )
 
 func main() {
-	fmt.Println("🚀 Initializing Single-Threaded Movie Ticket Booking System...")
-	sys := GetMovieTicketBookingSystem()
+	fmt.Println("🚀 Initializing Golang Movie Ticket System with Explicit Design Patterns")
+	sys := services.GetMovieTicketBookingSystem()
 
-	movie1 := &Movie{
+	user1 := &entities.User{ID: "U1", Name: "Alice", Email: "alice@example.com"}
+	user2 := &entities.User{ID: "U2", Name: "Bob", Email: "bob@example.com"}
+	user3 := &entities.User{ID: "U3", Name: "Charlie", Email: "charlie@example.com"}
+
+    // Observer Hooks
+    sys.Subscribe("M1", &observer.UserObserver{UserName: user1.Name})
+    sys.Subscribe("M1", &observer.UserObserver{UserName: user2.Name})
+
+	movie1 := &entities.Movie{
 		ID:          "M1",
 		Title:       "Inception",
 		Description: "A mind-bending thriller",
 		Duration:    148,
 	}
-	sys.AddMovie(movie1)
 
-	theater1 := &Theater{
+	fmt.Println("\n--- Triggering Observer Push Notifications Natively ---")
+    sys.AddMovie(movie1)
+
+	theater1 := &entities.Theater{
 		ID:       "T1",
 		Name:     "PVR Cinemas",
 		Location: "Mumbai",
-		Shows:    []*Show{},
+		Shows:    []*entities.Show{},
 	}
 	sys.AddTheater(theater1)
 
-	show1 := &Show{
+	show1 := &entities.Show{
 		ID:        "SH1",
 		Movie:     movie1,
 		Theater:   theater1,
 		StartTime: time.Now().Add(1 * time.Hour),
 		EndTime:   time.Now().Add(3 * time.Hour),
-		Seats:     make(map[string]*Seat),
+		Seats:     make(map[string]*entities.Seat),
 	}
 	sys.AddShow(show1)
 
 	for i := 1; i <= 5; i++ {
 		seatId := fmt.Sprintf("A%d", i)
-		show1.Seats[seatId] = &Seat{ID: seatId, Row: 1, Column: i, Type: SeatTypePremium, Price: 25.0, Status: SeatStatusAvailable}
+		show1.Seats[seatId] = &entities.Seat{ID: seatId, Row: 1, Column: i, Type: enums.SeatTypePremium, Price: 25.0, Status: enums.SeatStatusAvailable}
 
 		seatId = fmt.Sprintf("B%d", i)
-		show1.Seats[seatId] = &Seat{ID: seatId, Row: 2, Column: i, Type: SeatTypeNormal, Price: 10.0, Status: SeatStatusAvailable}
+		show1.Seats[seatId] = &entities.Seat{ID: seatId, Row: 2, Column: i, Type: enums.SeatTypeNormal, Price: 10.0, Status: enums.SeatStatusAvailable}
 	}
 
-	user1 := &User{ID: "U1", Name: "Alice", Email: "alice@example.com"}
-	user2 := &User{ID: "U2", Name: "Bob", Email: "bob@example.com"}
-	user3 := &User{ID: "U3", Name: "Charlie", Email: "charlie@example.com"}
-
-	fmt.Println("\n--- Starting Sequential Booking Simulation ---")
-	fmt.Println("Alice attempts to book A1, A2.")
+	fmt.Println("\n--- Explicit Strategy Pattern Implementation ---")
+	fmt.Println("Alice attempts to dynamically book A1, A2 using WEEKEND Pricing Strategy (+$10 / seat surge).")
 	
-	bookingAlice, err := sys.BookTickets(user1, show1, []string{"A1", "A2"})
+	bookingAlice, err := sys.BookTickets(user1, show1, []string{"A1", "A2"}, &strategy.WeekendPricingStrategy{})
 	if err != nil {
 		fmt.Printf("❌ [Alice] Booking Failed: %v\n", err)
 	} else {
-		fmt.Printf("✅ [Alice] Booking Reserved (PENDING)! Booking ID: %s, Amount: $%.2f\n", bookingAlice.ID, bookingAlice.TotalPrice)
+		fmt.Printf("✅ [Alice] Booking Reserved (PENDING)! Booking ID: %s, Real-Time Amount: $%.2f\n", bookingAlice.ID, bookingAlice.TotalPrice)
 		sys.ConfirmBooking(bookingAlice.ID)
-		fmt.Println("🎉 [Alice] Successfully CONFIRMED booking!")
 	}
 
-	fmt.Println("\nBob sequentially attempts to book the overlapping A1, A2...")
-	bookingBob, err := sys.BookTickets(user2, show1, []string{"A1", "A2"})
+	fmt.Println("\nBob attempts to book overlapping Seats A1, A2 via WEEKDAY Pricing Strategy (Standard)...")
+	bookingBob, err := sys.BookTickets(user2, show1, []string{"A1", "A2"}, &strategy.WeekdayPricingStrategy{})
 	if err != nil {
-		fmt.Printf("❌ [Bob] Booking Failed accurately (already taken): %v\n", err)
+		fmt.Printf("❌ [Bob] Booking Failed accurately (already natively taken): %v\n", err)
 	} else {
 		fmt.Printf("✅ [Bob] Booking Reserved! (This shouldn't happen)\n")
 		sys.ConfirmBooking(bookingBob.ID)
 	}
 
-	fmt.Println("\nCharlie books B1, B2 and cancels...")
-	charlieBooking, err := sys.BookTickets(user3, show1, []string{"B1", "B2"})
+	fmt.Println("\nCharlie bookings B1, B2 safely on standard Weekday Pricing...")
+	charlieBooking, err := sys.BookTickets(user3, show1, []string{"B1", "B2"}, &strategy.WeekdayPricingStrategy{})
 	if err == nil {
-		fmt.Printf("✅ [Charlie] Reserved B1, B2. Status: PENDING.\n")
-		fmt.Printf("🔄 [Charlie] Cancelling booking...\n")
-		cancelErr := sys.CancelBooking(charlieBooking.ID)
-		if cancelErr == nil {
-			fmt.Printf("🗑️  [Charlie] Cancelled successfully. Seats reverted back to AVAILABLE!\n")
-		}
+		fmt.Printf("✅ [Charlie] Reserved B1, B2 dynamically. Total: $%.2f. Status: PENDING.\n", charlieBooking.TotalPrice)
 	}
-
-	fmt.Println("\n--- Final Seat Availability Summary ---")
-	bookedSeats := 0
-	availableSeats := 0
-	for _, seat := range show1.Seats {
-		if seat.Status == SeatStatusBooked {
-			bookedSeats++
-		} else {
-			availableSeats++
-		}
-	}
-	fmt.Printf("Initial Total Seats: 10\n")
-	fmt.Printf("Seats Successfully Booked: %d\n", bookedSeats)
-	fmt.Printf("Seats Remaning Available: %d\n", availableSeats)
 }

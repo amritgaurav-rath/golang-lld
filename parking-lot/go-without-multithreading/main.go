@@ -1,53 +1,56 @@
 package main
 
 import (
+	"app/parking-lot/go-without-multithreading/entities"
+	"app/parking-lot/go-without-multithreading/services"
+	"app/parking-lot/go-without-multithreading/strategy/fee"
+	"app/parking-lot/go-without-multithreading/strategy/parking"
 	"fmt"
-	"math/rand"
 )
 
 func main() {
-	fmt.Println("🚀 Initializing Single-Threaded Parking Lot Simulation...")
+	fmt.Println("🚀 Initializing FAANG Tier S.O.L.I.D. Parking Lot (Strategies Active)...")
 
-	// Initialize 2 levels for the parking lot
-	level1 := NewLevel(1, 5, 5, 2)
-	level2 := NewLevel(2, 3, 4, 1)
+	level1 := entities.NewLevel(1, 5, 5, 2)
+	level2 := entities.NewLevel(2, 3, 4, 1)
 
-	// Obtain the Singleton instance
-	lot := GetParkingLotInstance([]*Level{level1, level2})
+	sys := services.GetInstance()
+	sys.SetLevels([]*entities.Level{level1, level2})
 
-	lot.PrintAvailability()
+	// Inject Dynamic Pattern Strategies!
+	sys.SetParkingStrategy(&parking.FarthestFirstStrategy{}) // Inverts array to fill from backwards
+	sys.SetFeeStrategy(&fee.VehicleBasedFeeStrategy{})       // Generates dynamic billing cleanly
 
-	numVehicles := 30
-	fmt.Printf("Simulating %d vehicles arriving sequentially...\n\n", numVehicles)
+	sys.PrintAvailability()
 
-	// Sequential execution loop instead of goroutines
-	for i := 1; i <= numVehicles; i++ {
-		vTypes := []VehicleType{Motorcycle, Car, Truck}
-		vType := vTypes[rand.Intn(len(vTypes))]
-		plate := fmt.Sprintf("VEH-%03d", i)
+	fmt.Println("Alice sequence: Parks Car, Parks Motorcycle via FarthestFirstStrategy.")
 
-		// Factory Pattern to create vehicles dynamically
-		v, _ := VehicleFactory(vType, plate)
+	aliceCar := &entities.CarVehicle{BaseVehicle: entities.BaseVehicle{LicensePlate: "ALICE-01"}}
+	aliceMoto := &entities.MotorcycleVehicle{BaseVehicle: entities.BaseVehicle{LicensePlate: "ALICE-02"}}
 
-		spot, err := lot.ParkVehicle(v)
-		if err != nil {
-			fmt.Printf("❌ %s (%s) rejected: %s\n", v.GetLicensePlate(), v.GetType(), err.Error())
-			continue
-		}
-		
-		fmt.Printf("✅ %s (%s) PARKED in spot %s.\n", v.GetLicensePlate(), v.GetType(), spot.ID)
-
-		// Synchronous unparking chance
-		if rand.Intn(10) < 6 {
-			_, unparkErr := lot.UnparkVehicle(spot.ID)
-			if unparkErr != nil {
-				fmt.Printf("⚠️  Error unparking %s: %s\n", v.GetLicensePlate(), unparkErr.Error())
-			} else {
-				fmt.Printf("👋 %s (%s) LEFT spot %s.\n", v.GetLicensePlate(), v.GetType(), spot.ID)
-			}
-		}
+	spot1, err := sys.ParkVehicle(aliceCar)
+	if err != nil {
+		fmt.Println("❌ ERROR: ", err.Error())
+	} else {
+		fmt.Println("✅ Alice successfully PARKED Car at:", spot1.ID, "(Expect Level 2!)")
 	}
 
-	fmt.Println("\n🏁 Simulation completed.")
-	lot.PrintAvailability()
+	spot2, err := sys.ParkVehicle(aliceMoto)
+	if err != nil {
+		fmt.Println("❌ ERROR: ", err.Error())
+	} else {
+		fmt.Println("✅ Alice successfully PARKED Motorcycle at:", spot2.ID, "(Expect Level 2!)")
+	}
+
+	sys.PrintAvailability()
+
+	fmt.Println("Alice unparks Car...")
+	unparked, err := sys.UnparkVehicle(spot1.ID)
+	if err != nil {
+		fmt.Println("❌ ERROR:", err.Error())
+	} else {
+		fmt.Println("👋 Unparked safely:", unparked.GetLicensePlate())
+	}
+
+	sys.PrintAvailability()
 }
