@@ -1,0 +1,12 @@
+D:\Golang\splitwise\java-without-multithreading\Main.java
+D:\Golang\splitwise\java-without-multithreading\SplitwiseService.java
+D:\Golang\splitwise\java-without-multithreading\entities\BalanceSheet.java
+D:\Golang\splitwise\java-without-multithreading\entities\Expense.java
+D:\Golang\splitwise\java-without-multithreading\entities\Group.java
+D:\Golang\splitwise\java-without-multithreading\entities\Split.java
+D:\Golang\splitwise\java-without-multithreading\entities\Transaction.java
+D:\Golang\splitwise\java-without-multithreading\entities\User.java
+D:\Golang\splitwise\java-without-multithreading\strategy\EqualSplitStrategy.java
+D:\Golang\splitwise\java-without-multithreading\strategy\ExactSplitStrategy.java
+D:\Golang\splitwise\java-without-multithreading\strategy\PercentageSplitStrategy.java
+D:\Golang\splitwise\java-without-multithreading\strategy\SplitStrategy.java

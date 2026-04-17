@@ -1,9 +1,9 @@
 package services
 
 import (
-	"app/food-ordering-system/go-without-multithreading/entities"
-	"app/food-ordering-system/go-without-multithreading/enums"
-	"app/food-ordering-system/go-without-multithreading/strategy"
+	"app/foodOrderingSystem/go-without-multithreading/entities"
+	"app/foodOrderingSystem/go-without-multithreading/enums"
+	"app/foodOrderingSystem/go-without-multithreading/strategy"
 	"fmt"
 )
 

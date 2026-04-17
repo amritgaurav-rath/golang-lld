@@ -1,6 +1,6 @@
 package strategy
 import (
-	"app/food-ordering-system/go-without-multithreading/entities"
+	"app/foodOrderingSystem/go-without-multithreading/entities"
 	"math"
 )
 

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"app/food-ordering-system/go-without-multithreading/enums"
-	"app/food-ordering-system/go-without-multithreading/services"
-	"app/food-ordering-system/go-without-multithreading/strategy"
+	"app/foodOrderingSystem/go-without-multithreading/enums"
+	"app/foodOrderingSystem/go-without-multithreading/services"
+	"app/foodOrderingSystem/go-without-multithreading/strategy"
 	"fmt"
 )
 

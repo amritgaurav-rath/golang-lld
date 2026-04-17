@@ -1,5 +1,5 @@
 package strategy
-import "app/food-ordering-system/go-without-multithreading/entities"
+import "app/foodOrderingSystem/go-without-multithreading/entities"
 
 type HighestRatingStrategy struct{}
 
